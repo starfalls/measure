@@ -118,7 +118,8 @@ static int test_skcipher(void)
     struct skcipher_request *req = NULL;
     char *scratchpad = NULL;
     char *ivdata = NULL;
-    unsigned char key[32]="ABCDEFGHABCDEFGHABCDEFGHABCDEFGH";
+    //unsigned char key[32]="ABCDEFGHABCDEFGHABCDEFGHABCDEFGH";
+    unsigned char key[32];
     int ret = -EFAULT;
 
     skcipher = crypto_alloc_skcipher("cbc-aes-aesni", 0, 0);
@@ -139,7 +140,7 @@ static int test_skcipher(void)
                       &sk.result);
 
     /* AES 256 with random key */
-    //get_random_bytes(&key, 32);
+    get_random_bytes(&key, 32);
     if (crypto_skcipher_setkey(skcipher, key, 32)) {
         pr_info("key could not be set\n");
         ret = -EAGAIN;
@@ -152,8 +153,8 @@ static int test_skcipher(void)
         pr_info("could not allocate ivdata\n");
         goto out;
     }
-    //get_random_bytes(ivdata, 16);
-    ivdata="abcdefghabcdefgh";
+    get_random_bytes(ivdata, 16);
+    //ivdata="abcdefghabcdefgh";
 
     /* Input data will be random */
     scratchpad = kmalloc(16, GFP_KERNEL);
@@ -161,8 +162,8 @@ static int test_skcipher(void)
         pr_info("could not allocate scratchpad\n");
         goto out;
     }
-    //get_random_bytes(scratchpad, 16);
-    scratchpad="1234567812345678";
+    get_random_bytes(scratchpad, 16);
+    //scratchpad="1234567812345678";
 
     sk.tfm = skcipher;
     sk.req = req;
