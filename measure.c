@@ -13,7 +13,6 @@
 #include <crypto/skcipher.h>
 #include <linux/scatterlist.h>
 #define round 500
-#define MSR_PP0_ENERGY_STATUS 0x639
 //#define round 41000
 
 MODULE_INFO(version, "0.1");
@@ -21,6 +20,9 @@ MODULE_AUTHOR("Chen Liu");
 MODULE_LICENSE("GPL");
 
 unsigned int cycles_low, cycles_high, cycles_low1, cycles_high1;
+unsigned long flags;
+uint64_t initial, value=0;
+unsigned int encryption_done=0;
  
 uint64_t inline x86_rdmsr(uint64_t msr)
 {
@@ -69,6 +71,8 @@ struct skcipher_def {
 /* Callback function */
 void test_skcipher_cb(struct crypto_async_request *req, int error)
 {
+  uint64_t start, end;
+  
           asm volatile(   "RDTSCP\n\t"
                         "mov %%edx, %0\n\t"
                         "mov %%eax, %1\n\t"
@@ -77,17 +81,20 @@ void test_skcipher_cb(struct crypto_async_request *req, int error)
 	start = ( ((uint64_t)cycles_high << 32) | cycles_low );
         end = ( ((uint64_t)cycles_high1 << 32) | cycles_low1 );
 	printk(KERN_INFO "rdmsr changes: %llu, time=%llu",(x86_rdmsr(MSR_PP0_ENERGY_STATUS)-value),end-start);
-        raw_local_irq_restore(flags);
-        preempt_enable();
+	// raw_local_irq_restore(flags);
+	// preempt_enable();
 
 	
     struct tcrypt_result *result = req->data;
 
-    if (error == -EINPROGRESS)
+    if (error == -EINPROGRESS){
+       pr_info("Encryption error: inprogress\n");
         return;
+    }
     result->err = error;
     complete(&result->completion);
     pr_info("Encryption finished successfully\n");
+    encryption_done=1;
 }
 
 /* Perform cipher operation */
@@ -113,10 +120,11 @@ unsigned int test_skcipher_encdec(struct skcipher_def *sk,
             break;
         }
     default:
-        pr_info("skcipher encrypt returned with %d result %d\n",
-            rc, sk->result.err);
+        
         break;
     }
+    pr_info("skcipher encrypt returned with %d result %d\n",
+            rc, sk->result.err);
     init_completion(&sk->result.completion);
 
     return rc;
@@ -125,8 +133,8 @@ unsigned int test_skcipher_encdec(struct skcipher_def *sk,
 /* Initialize and trigger cipher operation */
 static int test_skcipher(void)
 {
-    unsigned long flags;
-    uint64_t start, end,initial, value=0;
+    
+    
     cycles_low=0;
     cycles_high=0;
     cycles_low1=0;
@@ -215,8 +223,8 @@ asm volatile("RDTSCP\n\t"
 
  
 
-        preempt_disable();
-        raw_local_irq_save(flags);
+// preempt_disable();
+//  raw_local_irq_save(flags);
 	
 	initial=x86_rdmsr(MSR_PP0_ENERGY_STATUS);
 	while(initial==(value=x86_rdmsr(MSR_PP0_ENERGY_STATUS)));
@@ -248,13 +256,15 @@ out:
         kfree(ivdata);
     if (scratchpad)
         kfree(scratchpad);
+    // while(!encryption_done);
+    encryption_done=1;
     return ret;
 }
 
 
 void inline Filltimes(unsigned int count) {
 unsigned long flags;
- uint64_t start, end,initial, value=0;
+ uint64_t start,end,initial, value=0;
 cycles_low=cycles_high=cycles_low1=cycles_high1=0;
 volatile int i = 0;
 
@@ -317,9 +327,9 @@ end = ( ((uint64_t)cycles_high1 << 32) | cycles_low1 );
 static int __init hello_start(void)
 {
   int i=0;
-  for (i=0;i<round;i++)
-  Filltimes(i);
-  //test_skcipher();
+  //for (i=0;i<round;i++)
+  //Filltimes(i);
+  test_skcipher();
   return;
 }
 
