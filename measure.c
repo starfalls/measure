@@ -12,12 +12,15 @@
 #include <linux/mm.h>
 #include <crypto/skcipher.h>
 #include <linux/scatterlist.h>
-//#define round 280
-#define round 41000
+#define round 500
+#define MSR_PP0_ENERGY_STATUS 0x639
+//#define round 41000
 
 MODULE_INFO(version, "0.1");
-MODULE_AUTHOR("Me");
+MODULE_AUTHOR("Chen Liu");
 MODULE_LICENSE("GPL");
+
+unsigned int cycles_low, cycles_high, cycles_low1, cycles_high1;
  
 uint64_t inline x86_rdmsr(uint64_t msr)
 {
@@ -66,6 +69,18 @@ struct skcipher_def {
 /* Callback function */
 void test_skcipher_cb(struct crypto_async_request *req, int error)
 {
+          asm volatile(   "RDTSCP\n\t"
+                        "mov %%edx, %0\n\t"
+                        "mov %%eax, %1\n\t"
+                        "CPUID\n\t": "=r" (cycles_high1), "=r"
+        (cycles_low1):: "%rax", "%rbx", "%rcx", "%rdx");
+	start = ( ((uint64_t)cycles_high << 32) | cycles_low );
+        end = ( ((uint64_t)cycles_high1 << 32) | cycles_low1 );
+	printk(KERN_INFO "rdmsr changes: %llu, time=%llu",(x86_rdmsr(MSR_PP0_ENERGY_STATUS)-value),end-start);
+        raw_local_irq_restore(flags);
+        preempt_enable();
+
+	
     struct tcrypt_result *result = req->data;
 
     if (error == -EINPROGRESS)
@@ -112,7 +127,10 @@ static int test_skcipher(void)
 {
     unsigned long flags;
     uint64_t start, end,initial, value=0;
-    unsigned int cycles_low, cycles_high, cycles_low1, cycles_high1;
+    cycles_low=0;
+    cycles_high=0;
+    cycles_low1=0;
+    cycles_high1=0;
     struct skcipher_def sk;
     struct crypto_skcipher *skcipher = NULL;
     struct skcipher_request *req = NULL;
@@ -200,8 +218,8 @@ asm volatile("RDTSCP\n\t"
         preempt_disable();
         raw_local_irq_save(flags);
 	
-	initial=x86_rdmsr(0x639);
-	while(initial==(value=x86_rdmsr(0x639)));
+	initial=x86_rdmsr(MSR_PP0_ENERGY_STATUS);
+	while(initial==(value=x86_rdmsr(MSR_PP0_ENERGY_STATUS)));
 	asm volatile (  "CPUID\n\t"
                         "RDTSC\n\t"
                         "mov %%edx, %0\n\t"
@@ -211,16 +229,7 @@ asm volatile("RDTSCP\n\t"
         /* encrypt data */
         ret = test_skcipher_encdec(&sk, 1);
 	
-        asm volatile(   "RDTSCP\n\t"
-                        "mov %%edx, %0\n\t"
-                        "mov %%eax, %1\n\t"
-                        "CPUID\n\t": "=r" (cycles_high1), "=r"
-        (cycles_low1):: "%rax", "%rbx", "%rcx", "%rdx");
-	start = ( ((uint64_t)cycles_high << 32) | cycles_low );
-        end = ( ((uint64_t)cycles_high1 << 32) | cycles_low1 );
-	printk(KERN_INFO "rdmsr changes: %llu, time=%llu",(x86_rdmsr(0x639)-value),end-start);
-        raw_local_irq_restore(flags);
-        preempt_enable();
+
 
 
  
@@ -246,7 +255,7 @@ out:
 void inline Filltimes(unsigned int count) {
 unsigned long flags;
  uint64_t start, end,initial, value=0;
-unsigned cycles_low, cycles_high, cycles_low1, cycles_high1;
+cycles_low=cycles_high=cycles_low1=cycles_high1=0;
 volatile int i = 0;
 
 asm volatile ("CPUID\n\t"
@@ -275,8 +284,8 @@ asm volatile("RDTSCP\n\t"
         preempt_disable();
         raw_local_irq_save(flags);
 	
-	initial=x86_rdmsr(0x639);
-	while(initial==(value=x86_rdmsr(0x639)));
+	initial=x86_rdmsr(MSR_PP0_ENERGY_STATUS);
+	while(initial==(value=x86_rdmsr(MSR_PP0_ENERGY_STATUS)));
 	//value=x86_rdmsr(0x639);
 	asm volatile (  "CPUID\n\t"
                         "RDTSC\n\t"
@@ -285,8 +294,8 @@ asm volatile("RDTSCP\n\t"
         (cycles_low):: "%rax", "%rbx", "%rcx", "%rdx");
 
 	  for (i=0;i<count;i++)
-	    //x86_rdmsr(0x639);
-	    x86_nop();
+	    x86_rdmsr(MSR_PP0_ENERGY_STATUS);
+	  //  x86_nop();
 	
         asm volatile(   "RDTSCP\n\t"
                         "mov %%edx, %0\n\t"
@@ -294,7 +303,7 @@ asm volatile("RDTSCP\n\t"
                         "CPUID\n\t": "=r" (cycles_high1), "=r"
         (cycles_low1):: "%rax", "%rbx", "%rcx", "%rdx");
 	//printk(KERN_INFO "rdmsr changes: %s   ",(value==x86_rdmsr(0x639)?"No":"Yes"));
-	printk(KERN_INFO "rdmsr changes: %llu",(x86_rdmsr(0x639)-value));
+	printk(KERN_INFO "rdmsr changes: %llu",(x86_rdmsr(MSR_PP0_ENERGY_STATUS)-value));
         raw_local_irq_restore(flags);
         preempt_enable();
 
@@ -307,10 +316,10 @@ end = ( ((uint64_t)cycles_high1 << 32) | cycles_low1 );
 
 static int __init hello_start(void)
 {
- // int i=0;
-  //for (i=0;i<100;i++)
-  //  Filltimes(round);
-  test_skcipher();
+  int i=0;
+  for (i=0;i<round;i++)
+  Filltimes(i);
+  //test_skcipher();
   return;
 }
 
