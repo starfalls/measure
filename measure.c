@@ -14,6 +14,7 @@
 #include <crypto/skcipher.h>
 #include <linux/scatterlist.h>
 #define round 500
+#define crypto_round 1024
 //#define round 41000
 
 MODULE_INFO(version, "0.1");
@@ -23,7 +24,6 @@ MODULE_LICENSE("GPL");
 unsigned int cycles_low, cycles_high, cycles_low1, cycles_high1;
 unsigned long flags;
 uint64_t initial, value=0;
-unsigned int encryption_done=0;
 uint64_t start, end;
  
 uint64_t inline x86_rdmsr(uint64_t msr)
@@ -78,19 +78,24 @@ void print_hex(const char *s)
   printk(KERN_INFO "\n");
 }
 
-
+#pragma GCC push_options
+#pragma GCC optimize ("O0")
 /* Initialize and trigger cipher operation */
-static int test_cipher(void)
+static uint64_t test_cipher(void)
 {
     
-    
+    int i;
     cycles_low=0;
     cycles_high=0;
     cycles_low1=0;
     cycles_high1=0;
     struct crypto_cipher *cipher = NULL;
     char buf[16]="AAAAAAAAAAAAAAAA";
-    char key[16]="BBBBBBBBBBBBBBBB";
+    //char buf[16]="DDDDDDDDDDDDDDDD";
+    //char key[16]="BBBBBBBBBBBBBBBB";
+    char key[16]="CCCCCCCCCCCCCCCC";
+    char buf_cipher[16]="XXXXXXXXXXXXXXXX";
+
     int ret = -EFAULT;
 
     cipher = crypto_alloc_cipher("aes-asm", 0, 0);
@@ -108,7 +113,7 @@ static int test_cipher(void)
     }
 
 	//pr_info("Plaintext size:%u",(unsigned int)strlen(buf));
-	print_hex(buf);
+	//print_hex(buf);
     /* We encrypt one block */
 
 	asm volatile ("CPUID\n\t"
@@ -132,7 +137,7 @@ static int test_cipher(void)
 	"CPUID\n\t": "=r" (cycles_high1), "=r" (cycles_low1):: "%rax",
 	"%rbx", "%rcx", "%rdx");
 
- 
+
 
  	preempt_disable();
   	raw_local_irq_save(flags);
@@ -147,9 +152,12 @@ static int test_cipher(void)
         (cycles_low):: "%rax", "%rbx", "%rcx", "%rdx");
 
         /* encrypt data */
-        crypto_cipher_encrypt_one(cipher,buf,buf);
+	for (i=0;i<32000;i++)
+        crypto_cipher_encrypt_one(cipher,buf_cipher,buf);
+		//x86_nop();
+	
 
-	while(initial==(value=x86_rdmsr(MSR_PP0_ENERGY_STATUS)));
+	//while(initial==(value=x86_rdmsr(MSR_PP0_ENERGY_STATUS)));
         asm volatile(   "RDTSCP\n\t"
                         "mov %%edx, %0\n\t"
                         "mov %%eax, %1\n\t"
@@ -157,15 +165,16 @@ static int test_cipher(void)
         (cycles_low1):: "%rax", "%rbx", "%rcx", "%rdx");
 	start = ( ((uint64_t)cycles_high << 32) | cycles_low );
         end = ( ((uint64_t)cycles_high1 << 32) | cycles_low1 );
+	value=x86_rdmsr(MSR_PP0_ENERGY_STATUS);
 	printk(KERN_INFO "rdmsr changes: %llu, time=%llu",(value-initial),end-start);
 	raw_local_irq_restore(flags);
 	preempt_enable();
 
-	
+
     if (ret)
         goto out;
 
-    pr_info("Encryption triggered successfully\n");
+    //pr_info("Encryption triggered successfully\n");
 
 out:
     if (cipher)
@@ -173,12 +182,10 @@ out:
    /* if (buf)
         kfree(buf);*/
     // while(!encryption_done);
-    encryption_done=1;
-	pr_info("Ciphertext:");
-	print_hex(buf);
-    return ret;
+	//pr_info("Ciphertext:");
+	//print_hex(buf);
+    return (value-initial);
 }
-
 
 void inline Filltimes(unsigned int count) {
 	unsigned long flags;
@@ -207,7 +214,7 @@ void inline Filltimes(unsigned int count) {
 	"CPUID\n\t": "=r" (cycles_high1), "=r" (cycles_low1):: "%rax",
 	"%rbx", "%rcx", "%rdx");
 
- 
+
 
         preempt_disable();
         raw_local_irq_save(flags);
@@ -241,14 +248,17 @@ start = ( ((uint64_t)cycles_high << 32) | cycles_low );
 end = ( ((uint64_t)cycles_high1 << 32) | cycles_low1 );
  printk(KERN_INFO "time=%llu, rdmsr performed=%d\n",end-start,count);
 }
-
+#pragma GCC pop_options
 static int __init hello_start(void)
 {
-  //int i=0;
-  //for (i=0;i<round;i++)
+  int i=0;
+  uint64_t data=0;
+  for (i=0;i<crypto_round;i++){
   //Filltimes(i);
-  test_cipher();
-  return;
+  	data+=test_cipher();
+  }
+	pr_info("average energy consumption: %llu",data>>10);
+  return 0;
 }
 
 static void __exit hello_end(void)
