@@ -68,6 +68,13 @@ struct skcipher_def {
     struct tcrypt_result result;
 };
 
+void print_hex(const char *s)
+{
+  while(*s)
+    printk(KERN_INFO "%02x", *s++);
+  printk(KERN_INFO "\n");
+}
+
 /* Callback function */
 void test_skcipher_cb(struct crypto_async_request *req, int error)
 {
@@ -144,6 +151,7 @@ static int test_skcipher(void)
     struct skcipher_request *req = NULL;
     char *scratchpad = NULL;
     char *ivdata = NULL;
+    char *buf;
     //unsigned char key[32]="ABCDEFGHABCDEFGHABCDEFGHABCDEFGH";
     unsigned char key[32];
     int ret = -EFAULT;
@@ -193,33 +201,36 @@ static int test_skcipher(void)
 
     sk.tfm = skcipher;
     sk.req = req;
-
+	pr_info("Scratchpad:");
+	print_hex(scratchpad);
     /* We encrypt one block */
     sg_init_one(&sk.sg, scratchpad, 16);
     skcipher_request_set_crypt(req, &sk.sg, &sk.sg, 16, ivdata);
     init_completion(&sk.result.completion);
+    buf=sg_virt(&sk.sg);
+	pr_info("Plaintext:");
+	print_hex(buf);
 
-
-asm volatile ("CPUID\n\t"
-"RDTSC\n\t"
-"mov %%edx, %0\n\t"
-"mov %%eax, %1\n\t": "=r" (cycles_high), "=r" (cycles_low)::
-"%rax", "%rbx", "%rcx", "%rdx");
-asm volatile("RDTSCP\n\t"
-"mov %%edx, %0\n\t"
-"mov %%eax, %1\n\t"
-"CPUID\n\t": "=r" (cycles_high1), "=r" (cycles_low1):: "%rax",
-"%rbx", "%rcx", "%rdx");
-asm volatile ("CPUID\n\t"
-"RDTSC\n\t"
-"mov %%edx, %0\n\t"
-"mov %%eax, %1\n\t": "=r" (cycles_high), "=r" (cycles_low)::
-"%rax", "%rbx", "%rcx", "%rdx");
-asm volatile("RDTSCP\n\t"
-"mov %%edx, %0\n\t"
-"mov %%eax, %1\n\t"
-"CPUID\n\t": "=r" (cycles_high1), "=r" (cycles_low1):: "%rax",
-"%rbx", "%rcx", "%rdx");
+	asm volatile ("CPUID\n\t"
+	"RDTSC\n\t"
+	"mov %%edx, %0\n\t"
+	"mov %%eax, %1\n\t": "=r" (cycles_high), "=r" (cycles_low)::
+	"%rax", "%rbx", "%rcx", "%rdx");
+	asm volatile("RDTSCP\n\t"
+	"mov %%edx, %0\n\t"
+	"mov %%eax, %1\n\t"
+	"CPUID\n\t": "=r" (cycles_high1), "=r" (cycles_low1):: "%rax",
+	"%rbx", "%rcx", "%rdx");
+	asm volatile ("CPUID\n\t"
+	"RDTSC\n\t"
+	"mov %%edx, %0\n\t"
+	"mov %%eax, %1\n\t": "=r" (cycles_high), "=r" (cycles_low)::
+	"%rax", "%rbx", "%rcx", "%rdx");
+	asm volatile("RDTSCP\n\t"
+	"mov %%edx, %0\n\t"
+	"mov %%eax, %1\n\t"
+	"CPUID\n\t": "=r" (cycles_high1), "=r" (cycles_low1):: "%rax",
+	"%rbx", "%rcx", "%rdx");
 
  
 
@@ -237,11 +248,6 @@ asm volatile("RDTSCP\n\t"
         /* encrypt data */
         ret = test_skcipher_encdec(&sk, 1);
 	
-
-
-
- 
-
     if (ret)
         goto out;
 
@@ -258,36 +264,39 @@ out:
         kfree(scratchpad);
     // while(!encryption_done);
     encryption_done=1;
+    buf=sg_virt(&sk.sg);
+	pr_info("Ciphertext:");
+	print_hex(buf);
     return ret;
 }
 
 
 void inline Filltimes(unsigned int count) {
-unsigned long flags;
- uint64_t start,end,initial, value=0;
-cycles_low=cycles_high=cycles_low1=cycles_high1=0;
-volatile int i = 0;
+	unsigned long flags;
+	uint64_t start,end,initial, value=0;
+	cycles_low=cycles_high=cycles_low1=cycles_high1=0;
+	volatile int i = 0;
 
-asm volatile ("CPUID\n\t"
-"RDTSC\n\t"
-"mov %%edx, %0\n\t"
-"mov %%eax, %1\n\t": "=r" (cycles_high), "=r" (cycles_low)::
-"%rax", "%rbx", "%rcx", "%rdx");
-asm volatile("RDTSCP\n\t"
-"mov %%edx, %0\n\t"
-"mov %%eax, %1\n\t"
-"CPUID\n\t": "=r" (cycles_high1), "=r" (cycles_low1):: "%rax",
-"%rbx", "%rcx", "%rdx");
-asm volatile ("CPUID\n\t"
-"RDTSC\n\t"
-"mov %%edx, %0\n\t"
-"mov %%eax, %1\n\t": "=r" (cycles_high), "=r" (cycles_low)::
-"%rax", "%rbx", "%rcx", "%rdx");
-asm volatile("RDTSCP\n\t"
-"mov %%edx, %0\n\t"
-"mov %%eax, %1\n\t"
-"CPUID\n\t": "=r" (cycles_high1), "=r" (cycles_low1):: "%rax",
-"%rbx", "%rcx", "%rdx");
+	asm volatile ("CPUID\n\t"
+	"RDTSC\n\t"
+	"mov %%edx, %0\n\t"
+	"mov %%eax, %1\n\t": "=r" (cycles_high), "=r" (cycles_low)::
+	"%rax", "%rbx", "%rcx", "%rdx");
+	asm volatile("RDTSCP\n\t"
+	"mov %%edx, %0\n\t"
+	"mov %%eax, %1\n\t"
+	"CPUID\n\t": "=r" (cycles_high1), "=r" (cycles_low1):: "%rax",
+	"%rbx", "%rcx", "%rdx");
+	asm volatile ("CPUID\n\t"
+	"RDTSC\n\t"
+	"mov %%edx, %0\n\t"
+	"mov %%eax, %1\n\t": "=r" (cycles_high), "=r" (cycles_low)::
+	"%rax", "%rbx", "%rcx", "%rdx");
+	asm volatile("RDTSCP\n\t"
+	"mov %%edx, %0\n\t"
+	"mov %%eax, %1\n\t"
+	"CPUID\n\t": "=r" (cycles_high1), "=r" (cycles_low1):: "%rax",
+	"%rbx", "%rcx", "%rdx");
 
  
 
