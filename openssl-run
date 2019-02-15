@@ -1,0 +1,7 @@
+msr1=$(rdmsr 0x639)
+openssl aes-128-ecb -e -nosalt -K AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA -in plaintext -out ciphertext
+msr2=$(rdmsr 0x639)
+msr_diff=$((16#$msr2-16#$msr1))
+echo $msr1
+echo $msr2
+echo $msr_diff
