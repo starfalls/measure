@@ -1,0 +1,4 @@
+dmesg -C
+insmod measure.ko
+rmmod measure
+dmesg
