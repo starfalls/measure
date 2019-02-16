@@ -25,7 +25,79 @@ unsigned long flags;
 uint64_t initial, value=0;
 unsigned int encryption_done=0;
 uint64_t start, end;
- 
+const char priv_key[] =
+    "\x30\x82\x02\x5d\x02\x01\x00\x02\x81\x81\x00\xd0"
+    "\xb4\x5a\xc1\x9e\x2e\x4d\xae\xbd\x51\x39\xcc\x4b"
+    "\x12\xf5\x76\x30\xcf\x39\x97\xf1\xd3\x0d\xaa\x37"
+    "\x70\x2d\x2f\x01\xc9\x69\x09\xe3\x4e\xd5\x90\x68"
+    "\xfe\xbf\x7c\x8b\x86\xdf\xf3\x14\xb3\x96\xcf\x1b"
+    "\x39\xe3\xe6\x8a\x77\x6d\xe4\x89\xef\xdb\xba\x4a"
+    "\x40\x6d\xa9\xec\x21\x62\x00\xa4\xc3\x45\xcc\xdd"
+    "\x56\xb2\x77\x59\x46\x17\x27\x0e\x2c\xfe\x85\x53"
+    "\x72\x26\x9b\xdc\x24\x83\xd1\x67\xa7\x4c\x88\x70"
+    "\x78\x3f\x1c\x60\xd4\x95\x14\x57\xfc\xdb\x15\xaa"
+    "\xab\x31\x32\xb2\x44\x72\xdd\xb0\x0b\x13\x62\x03"
+    "\x50\x1d\xd4\x6a\xf6\xb2\x23\x02\x03\x01\x00\x01"
+    "\x02\x81\x80\x7b\x83\x10\xe6\xde\xf7\x26\x30\x10"
+    "\x88\x3e\x7d\x61\xbc\xa1\x99\xc5\xbf\x0d\xa5\x97"
+    "\x8e\xc0\xda\x88\x9e\x91\x8e\xed\x2e\xc6\x43\xfc"
+    "\xcb\x0d\xe6\xbd\xcc\x6d\x84\x86\x8a\x56\x84\xe4"
+    "\x2e\x78\x44\xaf\x27\x2e\x71\xa4\x66\x93\x99\x99"
+    "\xec\x62\x8c\x38\x1f\x33\x06\x37\xc1\x9d\x17\x6b"
+    "\xad\xfb\x8e\x44\xd3\x11\xcb\x74\xa4\x01\x78\xb0"
+    "\x9c\x64\xd3\x0d\x63\x99\x65\xe3\xca\xae\x11\xb2"
+    "\xc4\x00\x36\xc2\xfc\x4b\x7b\x6f\x9e\x84\xb6\x97"
+    "\x00\x56\x5b\x09\xa1\x28\xf5\x28\x8d\xc7\x93\x45"
+    "\xba\xc0\x6b\xa9\x2d\xeb\x02\xcd\xde\x1e\x29\x02"
+    "\x41\x00\xf6\x0e\x41\xbc\xfa\x40\x82\xba\xa0\x6a"
+    "\xa5\x75\x5c\xcd\xfe\xa8\x11\xa6\xef\xbc\xad\x5f"
+    "\x86\x40\xb4\x5a\x65\xc1\x7b\x5e\x89\xc2\x60\x38"
+    "\x0e\x8b\x7d\x7d\x99\x30\x01\xf1\xea\x1e\x3e\x46"
+    "\xf4\xd2\xd9\x80\xaf\x3a\x4b\x2f\xbb\x91\xbb\xb7"
+    "\x22\x2d\x6a\x0f\x4e\x6f\x02\x41\x00\xd9\x23\xa7"
+    "\x98\x0c\x58\xe1\x5d\xa7\x15\x05\xc6\xd9\x7b\xc5"
+    "\x7b\xd3\x01\x8b\x1e\xf1\x2e\x99\xc5\xac\x41\xf1"
+    "\x92\x88\xd9\x8e\x50\x86\xf9\x2f\x66\x42\xeb\xf9"
+    "\x80\x78\xfa\xc7\xea\x63\x35\x7e\x6f\xc5\x35\x36"
+    "\x6b\xa1\x8a\xa3\x49\x97\xbc\xa6\x9b\x5c\x6e\xf1"
+    "\x8d\x02\x40\x44\x70\xa0\xbe\x64\xc9\x4e\xd3\x84"
+    "\x4d\x45\xaa\x88\x5e\xcf\xe7\x85\xc9\x6e\x43\x87"
+    "\xe1\xdb\x20\xe2\x49\x86\xa6\x33\x9f\x8f\x27\xde"
+    "\xc5\x98\xde\x19\xd0\xb6\xac\x50\xce\x2e\x35\xad"
+    "\x52\xe5\x44\x44\xb5\x73\x87\xfe\x63\xcf\x83\x70"
+    "\xb8\x36\xac\x75\x24\xbe\xc7\x02\x41\x00\x87\xd2"
+    "\x97\xa8\xb2\x40\x7e\x67\xf8\x75\x5b\xf1\xb0\x64"
+    "\x8d\x79\x10\xd9\xec\x4d\xe4\x8b\x43\xc0\xb4\x29"
+    "\x63\x94\x47\x69\xde\x6d\x5c\xa0\x4e\x17\xe7\x50"
+    "\x77\xf6\xf6\xb5\xd7\x8b\x33\x97\x68\x89\x3d\x90"
+    "\x35\x84\x49\xbd\xd0\xb9\xdd\xe2\x31\x4d\x09\x1a"
+    "\x94\x99\x02\x41\x00\xc9\x12\xec\x64\xe9\x01\x27"
+    "\x10\x6c\xad\xc5\x83\x8a\x26\x39\xe0\x05\xde\xde"
+    "\xf9\x1a\x5d\xf6\xcb\xe8\xd2\x9b\x40\xd5\x11\xc8"
+    "\x9a\x6d\x29\xb6\x15\x36\x9a\xee\x45\xe2\x51\x14"
+    "\xa8\x2d\xab\x57\x86\x80\x87\x0a\x02\xaf\xfa\xda"
+    "\x5e\x7d\xfb\x84\xd1\x3a\xe0\xed\x57";
+const int priv_key_len = 609;
+
+const char pub_key[] =
+    "\x30\x81\x9e\x30\x0d\x06\x09\x2a\x86\x48\x86\xf7"
+    "\x0d\x01\x01\x01\x05\x00\x03\x81\x8c\x00\x30\x81"
+    "\x88\x02\x81\x80\x6d\x4d\xaf\xf5\x32\x98\xfa\x33"
+    "\xf2\x4a\xb0\x50\x27\x6f\x50\x0b\x28\xca\x5f\x6e"
+    "\xde\xec\x7b\xae\xeb\xd1\x89\xdf\xcf\x8d\x12\x6c"
+    "\x0d\xf2\x32\x65\xb7\x04\xf2\xb8\x76\x67\xe9\x28"
+    "\xc3\x12\x6b\x4a\x52\x09\xd6\x61\x9b\x21\x25\x04"
+    "\xe0\x9a\xec\xbc\x25\x3f\xfc\x6f\x1a\x98\xa8\x02"
+    "\xa8\x2e\x89\x91\x20\xcf\xf0\xd1\x9d\x09\x35\xac"
+    "\x95\xe2\xe4\x8e\x5b\x7c\x34\x93\x39\x4f\x33\xbd"
+    "\x6e\xe7\xc5\xbb\x2a\x28\x32\x13\x62\x39\x37\x87"
+    "\x40\xe7\x59\xf8\x94\xad\xc4\x2e\xaf\x23\xf4\x98"
+    "\xcd\x90\x27\x96\x41\xc6\x4a\xcd\x6d\x56\xfd\x5b"
+    "\x02\x03\x01\x00\x01";
+const int pub_key_len = 161;
+
+//const char *msg = "\x54\x85\x9b\x34\x2c\x49\xea\x2a";
+//const int msg_len = 8; 
 uint64_t inline x86_rdmsr(uint64_t msr)
 {
 	uint32_t low, high;
@@ -71,10 +143,10 @@ struct akcipher_def {
     struct tcrypt_result result;
 };
 
-void print_hex(const char *s)
+void print_hex(const char *s, unsigned int len)
 { 
   int i;
-  for (i=0;i<16;i++)
+  for (i=0;i<len;i++)
     printk(KERN_INFO "%02x", (unsigned char)s[i]);
   printk(KERN_INFO "\n");
 }
@@ -82,10 +154,6 @@ void print_hex(const char *s)
 /* Callback function */
 void test_akcipher_cb(struct crypto_async_request *req, int error)
 {
-  
-  
-
-	
     struct tcrypt_result *result = req->data;
 
     if (error == -EINPROGRESS){
@@ -140,43 +208,13 @@ static int test_akcipher(void)
     cycles_high=0;
     cycles_low1=0;
     cycles_high1=0;
+    unsigned int out_len_max=0;
     struct akcipher_def ak;
     struct crypto_akcipher *akcipher = NULL;
     struct akcipher_request *req = NULL;
     char *input_buffer = NULL;
     char *output_buffer = NULL;
-    char priv_key[]="	MIIEowIBAAKCAQEArTBrmOdIylgP5m1td2eQYdHzbeUmIdp+QFpeLvyCWD7CRaON \
-			kQegr3Nin0MgDkd40nlU4tU7WgnUpyTYPEsCKxwjfWCHC0rST05KOtZvRt/NShnv \
-			YyYbPkcYQXItzdbpRt3pM2qqq5nrFLd7R0uoW6/1Q+ixtZxVw6LVSE+qEMDnAdk3 \
-			9f5uWFu17XA4+3crE+ptkziZirhn7FQjE+u7EBOAlrJQ5ZDTvok5mVmLxs8RwGKl \
-			cCJzbX/fKLlM7mCByOrSd464HIJsHQq/eLResFA1L0gAHMKAFxiVJUbGcLkN/x1t \
-			6QLqMwr+y4EAxVRNJaDFS8fG3Nbeo87HR4vXIQIDAQABAoIBAQCgdFHbkbxgq4Hf \
-			rNZUYADmgAuWb00K5FE/8fl8crmYZFy9BDBug7CdnLtsblZOpG0OIxdAKOoaGy2H \
-			xZ0JDz1tD17aFApJrgJ3M0OWi4EBGuwpkSm2pGFtK5UPXWeOY2QxIfuihVqmLa4c \
-			vXlbrn7Go5kKV5X9emADJuOPYS9g4LF105R5rSFQC7iIMeIYzMa8GGLgL1FUUvvw \
-			y0d+rrUAy3Rws3b8zb05UKELMr1rFNgqyprXsUlp3OYILFs0Fua8Qw/5rKNWJj2c \
-			Lo6/P5DBEELj+Agkx2y4aBpW9kZcBBXdascmPPVzYVOrfoZFY7fBdi3U0YIsP5Nk \
-			Xqu6SlqBAoGBANTMKmkEdoZLGhxqQuQN/29o5YucSUamh82Pg+MkMWXWhVcoj725 \
-			dQskI20vGM0sSmrGI5G8Fs6EuyHZLt3JGtGPPuLAIJMaiSxSZGff7IWm+vfxL6mh \
-			fXuKX8yQVbGUVS89r2pB+VzYzmmkq5QW4giWOXy689H2YUWGXq5oS+XpAoGBANBZ \
-			qwVcbi7yWBHTnLs1xaaRAj0+QWg1xbIRKTo8fMTjnDAs7XGIws32MZMxfsMu4rXw \
-			LME9yeIqfVE6UJCnd+q3UvTZSKqmX7zm1rK+Y1EAfdMemJgzTyFfV+zwHErGz0ZB \
-			3H5XCdcVjR/t2LbT/vmQzbLARYU2uosKn/e2M0x5AoGARgSXv85UIYP8p3TfZaKl \
-			dccSIIngInsRHDYos0hpaJTZcwBJq6emN3BAp+BjTL9SDSf89CrrZjCOUmjf3uIZ \
-			DPMRQhLtpPmKQScrGnK3pJJ46bRWdn5Ih6nUM78aM0AXd1/YpCHpJv+/i0s/mY6d \
-			+S1U5RGuwFtNTk8UQFbZAmECgYAI0nMqY/KKbFqMTrCJQMqgte0pWLR+TCCV3KIp \
-			RBxoXdbkN1LKhubwv6bzu5nJe/e/im7qs8oTmIb75IM6zMyIFMEfev/XsfnFzuRy \
-			Zxtfd6zcPqRpdWq5WAcqEjSweeCW8fz7IIZbJB94paKSg0F9ocMD+Z43+MxHTOjf \
-			HUjoyQKBgD1nfQayjhR+/0vx/lvOrduLHNPUslcQtJEKdju9phYcs0iuW0jMLtSZ \
-			5+YU3fRfT6NC47RVMXV7OJQhPTCjHU9sw/9NobZvSy2apR+O6lmmET9F27JsoBi2 \
-			QdaCOuv2FvLlOfcs62Su5ureYu8VpW1iMe8hv2y5KIxjElAANBJo";
-    char pub_key[]="	MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEArTBrmOdIylgP5m1td2eQ \
-			YdHzbeUmIdp+QFpeLvyCWD7CRaONkQegr3Nin0MgDkd40nlU4tU7WgnUpyTYPEsC \
-			KxwjfWCHC0rST05KOtZvRt/NShnvYyYbPkcYQXItzdbpRt3pM2qqq5nrFLd7R0uo \
-			W6/1Q+ixtZxVw6LVSE+qEMDnAdk39f5uWFu17XA4+3crE+ptkziZirhn7FQjE+u7 \
-			EBOAlrJQ5ZDTvok5mVmLxs8RwGKlcCJzbX/fKLlM7mCByOrSd464HIJsHQq/eLRe \
-			sFA1L0gAHMKAFxiVJUbGcLkN/x1t6QLqMwr+y4EAxVRNJaDFS8fG3Nbeo87HR4vX \
-			IQIDAQAB";
+    char *buf=NULL;
     int ret = -EFAULT;
 
     akcipher = crypto_alloc_akcipher("rsa", 0, 0);
@@ -196,32 +234,37 @@ static int test_akcipher(void)
                       test_akcipher_cb,
                       &ak.result);
              
-	pr_info("Public key size:%u",(unsigned int)strlen(pub_key));
-	pr_info("Private key size:%u",(unsigned int)strlen(priv_key));
-	
-    if (crypto_akcipher_set_pub_key(akcipher, pub_key, (unsigned int)strlen(pub_key))) {
-        pr_info("pub key could not be set\n");
-        ret = -EAGAIN;
-        goto out;
-    }
-    
-    if (crypto_akcipher_set_priv_key(akcipher, priv_key, (unsigned int)strlen(priv_key))) {
+	pr_info("Public key size:%u",(unsigned int)sizeof(pub_key));
+	pr_info("Private key size:%u",(unsigned int)sizeof(priv_key));
+
+    /* set up private key */
+    if (crypto_akcipher_set_priv_key(akcipher, priv_key, priv_key_len)) {
         pr_info("pri key could not be set\n");
         ret = -EAGAIN;
         goto out;
-    }   
+    }  
+	
+    /* set up public key */
+    /*if (crypto_akcipher_set_pub_key(akcipher, pub_key, pub_key_len)) {
+        pr_info("pub key could not be set\n");
+        ret = -EAGAIN;
+        goto out;
+    }*/
+    
+ 
     
     /* Input data will be random */
     input_buffer = kmalloc(16, GFP_KERNEL);
-//pr_info("Scratchpad size before get random:%u",(unsigned int)strlen(scratchpad));
     if (!input_buffer) {
         pr_info("could not allocate input_buffer\n");
         goto out;
     }
-    get_random_bytes(input_buffer, 16);
-    //scratchpad="1234567812345678";
+    //get_random_bytes(input_buffer, 1024);
+    memcpy(input_buffer, "AAAAAAAAAAAAAAAA",16);
 
-    output_buffer = kmalloc(1000, GFP_KERNEL);
+    out_len_max = crypto_akcipher_maxsize(akcipher);
+
+    output_buffer = kzalloc(out_len_max, GFP_KERNEL);
     if (!output_buffer) {
         pr_info("could not allocate output_buffer\n");
         goto out;
@@ -234,12 +277,13 @@ static int test_akcipher(void)
 	//print_hex(scratchpad);
     /* We encrypt one block */
     sg_init_one(&ak.input_list, input_buffer, 16);
-    sg_init_one(&ak.output_list, output_buffer, 1000);
-    akcipher_request_set_crypt(req, &ak.input_list, &ak.output_list, 16, 1000);
+    sg_init_one(&ak.output_list, output_buffer, out_len_max);
+    akcipher_request_set_crypt(req, &ak.input_list, &ak.output_list, 16, out_len_max);
     init_completion(&ak.result.completion);
-    //buf=sg_virt(&ak.sg);
-	//pr_info("Plaintext size %u:", (unsigned int)strlen(buf));
-	//print_hex(buf);
+
+   	/*buf=sg_virt(&ak.input_list);
+	pr_info("Plaintext :");
+	print_hex(buf,1024);*/
 
 	asm volatile ("CPUID\n\t"
 	"RDTSC\n\t"
@@ -269,6 +313,7 @@ static int test_akcipher(void)
 	
 	initial=x86_rdmsr(MSR_PP0_ENERGY_STATUS);
 	while(initial==(value=x86_rdmsr(MSR_PP0_ENERGY_STATUS)));
+	initial=value;
 	asm volatile (  "CPUID\n\t"
                         "RDTSC\n\t"
                         "mov %%edx, %0\n\t"
@@ -277,7 +322,8 @@ static int test_akcipher(void)
 
         /* encrypt data */
         ret = test_akcipher_encdec(&ak, 1);
-
+	
+	while(initial==(value=x86_rdmsr(MSR_PP0_ENERGY_STATUS)));
         asm volatile(   "RDTSCP\n\t"
                         "mov %%edx, %0\n\t"
                         "mov %%eax, %1\n\t"
@@ -285,7 +331,7 @@ static int test_akcipher(void)
         (cycles_low1):: "%rax", "%rbx", "%rcx", "%rdx");
 	start = ( ((uint64_t)cycles_high << 32) | cycles_low );
         end = ( ((uint64_t)cycles_high1 << 32) | cycles_low1 );
-	printk(KERN_INFO "rdmsr changes: %llu, time=%llu",(x86_rdmsr(MSR_PP0_ENERGY_STATUS)-value),end-start);
+	printk(KERN_INFO "rdmsr changes: %llu, time=%llu",(value-initial),end-start);
 	raw_local_irq_restore(flags);
 	preempt_enable();
 
@@ -296,21 +342,21 @@ static int test_akcipher(void)
     pr_info("Encryption triggered successfully\n");
 
 out:
+	/*buf=sg_virt(&ak.output_list);
+	pr_info("Ciphertext:");
+	print_hex(buf,out_len_max);*/
+
+
     if (akcipher)
         crypto_free_akcipher(akcipher);
     if (req)
         akcipher_request_free(req);
-    if (pub_key)
-        kfree(pub_key);
-    if (priv_key)
-        kfree(priv_key);
     if (input_buffer)
         kfree(input_buffer);
     if (output_buffer)
         kfree(output_buffer);
 
-	//pr_info("Ciphertext:");
-	//print_hex(buf);
+
     return ret;
 }
 
