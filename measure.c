@@ -13,6 +13,7 @@
 #include <linux/string.h>
 #include <crypto/akcipher.h>
 #include <linux/scatterlist.h>
+#include <linux/delay.h>
 #define round 500
 //#define round 41000
 
@@ -119,11 +120,438 @@ void inline x86_wrmsr(uint64_t msr, uint64_t value)
 		: "c"(msr), "a"(low), "d"(high)
 	);
 }
+#pragma GCC push_options
+#pragma GCC optimize ("O0")
+void inline x86_100_add(uint32_t src, uint32_t dst)
+{	
+	__asm__("add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		"add %1, %0\n\t"
+		:"+r"(dst)
+		:"r"(src)
+		:
+	);
 
-void inline x86_nop(void)
+}
+
+
+void inline x86_100_ror(uint32_t u, size_t r)
+{	
+	__asm__("rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		"rorl %%cl, %0\n\t"
+		:"+r"(u)
+		:"c"(r)
+	);
+//	printk(KERN_ERR "Value=%x",u);
+}
+void inline x86_100_mul(unsigned int foo, unsigned int bar)
 {
-        asm volatile (
-		"nop"
+	//int foo=10, bar=15;
+	int upper;
+	__asm__("mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		"mul %%ebx\n\t"
+		:"=a"(foo),"=d"(upper)
+		:"a"(foo),"b"(bar)
+		:"cc"
+		);
+}
+#pragma GCC pop_options
+void inline x86_100_nop(void)
+{
+	asm volatile (
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
+		"nop\n\t"
 		:
 		:
 	);
@@ -321,9 +749,10 @@ static int test_akcipher(void)
         (cycles_low):: "%rax", "%rbx", "%rcx", "%rdx");
 
         /* encrypt data */
-        ret = test_akcipher_encdec(&ak, 1);
+        //ret = test_akcipher_encdec(&ak, 1);
+	msleep(2000);
 	
-	while(initial==(value=x86_rdmsr(MSR_PP0_ENERGY_STATUS)));
+	//while(initial==(value=x86_rdmsr(MSR_PP0_ENERGY_STATUS)));
         asm volatile(   "RDTSCP\n\t"
                         "mov %%edx, %0\n\t"
                         "mov %%eax, %1\n\t"
@@ -361,11 +790,12 @@ out:
 }
 
 
-void inline Filltimes(unsigned int count) {
+void inline measure(int inst,unsigned int count) {
 	unsigned long flags;
-	uint64_t start,end,initial, value=0;
+	uint64_t start,end,initial,middle, value=0;
 	cycles_low=cycles_high=cycles_low1=cycles_high1=0;
 	volatile int i = 0;
+	unsigned int extra=0;
 
 	asm volatile ("CPUID\n\t"
 	"RDTSC\n\t"
@@ -395,24 +825,38 @@ void inline Filltimes(unsigned int count) {
 	
 	initial=x86_rdmsr(MSR_PP0_ENERGY_STATUS);
 	while(initial==(value=x86_rdmsr(MSR_PP0_ENERGY_STATUS)));
-	//value=x86_rdmsr(0x639);
+	initial=value;
+
 	asm volatile (  "CPUID\n\t"
                         "RDTSC\n\t"
                         "mov %%edx, %0\n\t"
                         "mov %%eax, %1\n\t": "=r" (cycles_high), "=r"
         (cycles_low):: "%rax", "%rbx", "%rcx", "%rdx");
+/*------------------------------------ Your code --------------------------------------*/
+	  for (i=0;i<count;i++){
+	    //x86_rdmsr(MSR_PP0_ENERGY_STATUS);
+	    //x86_100_nop();
+		if (!inst)
+			//x86_100_mul(1,2);
+			//x86_100_ror(0x12345678,678);
+			x86_100_add(999,999);
+		else 
+			x86_100_add(1,1);
+//			x86_100_mul(1,1);
+			//x86_100_ror(0xaaaaaaaa,1);
 
-	  for (i=0;i<count;i++)
-	    x86_rdmsr(MSR_PP0_ENERGY_STATUS);
-	  //  x86_nop();
-	
+	}
+/*--------------------------------------------------------------------------------------*/
+	middle=x86_rdmsr(MSR_PP0_ENERGY_STATUS);	
+	while(middle==(value=x86_rdmsr(MSR_PP0_ENERGY_STATUS))){
+		extra++;	
+	}
         asm volatile(   "RDTSCP\n\t"
                         "mov %%edx, %0\n\t"
                         "mov %%eax, %1\n\t"
                         "CPUID\n\t": "=r" (cycles_high1), "=r"
         (cycles_low1):: "%rax", "%rbx", "%rcx", "%rdx");
-	//printk(KERN_INFO "rdmsr changes: %s   ",(value==x86_rdmsr(0x639)?"No":"Yes"));
-	printk(KERN_INFO "rdmsr changes: %llu",(x86_rdmsr(MSR_PP0_ENERGY_STATUS)-value));
+	printk(KERN_ERR "rdmsr changes: %llu, value: %llu, initial: %llu",(value-initial),value,initial);
         raw_local_irq_restore(flags);
         preempt_enable();
 
@@ -420,16 +864,20 @@ void inline Filltimes(unsigned int count) {
 start = ( ((uint64_t)cycles_high << 32) | cycles_low );
 
 end = ( ((uint64_t)cycles_high1 << 32) | cycles_low1 );
- printk(KERN_INFO "time=%llu, rdmsr performed=%d\n",end-start,count);
+ printk(KERN_ERR "time=%llu, extra rdmsr performed=%d\n",end-start,extra);
 }
 
 static int __init hello_start(void)
 {
-  int i=0;
-  //for (i=0;i<round;i++)
-  //Filltimes(i);
-  test_akcipher();
-  return;
+  	int i=0;
+  	//for (i=0;i<round;i++)
+  	//Filltimes(i);
+	printk(KERN_ERR "add input 1\n");
+  	measure(1,10000000);
+	printk(KERN_ERR "add input 2\n");
+ 	measure(0,10000000);
+  	//test_akcipher();
+  	return;
 }
 
 static void __exit hello_end(void)
