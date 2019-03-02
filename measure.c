@@ -14,6 +14,10 @@
 #include <crypto/akcipher.h>
 #include <linux/scatterlist.h>
 #include <linux/delay.h>
+#include <linux/fs.h>
+#include <asm/segment.h>
+#include <asm/uaccess.h>
+#include <linux/buffer_head.h>
 #define round 500
 //#define round 41000
 
@@ -23,9 +27,10 @@ MODULE_LICENSE("GPL");
 
 unsigned int cycles_low, cycles_high, cycles_low1, cycles_high1;
 unsigned long flags;
-uint64_t initial, value=0;
+uint64_t initial, value=0,middle=0;
 unsigned int encryption_done=0;
 uint64_t start, end;
+
 const char priv_key[] =
     "\x30\x82\x02\x5d\x02\x01\x00\x02\x81\x81\x00\xd0"
     "\xb4\x5a\xc1\x9e\x2e\x4d\xae\xbd\x51\x39\xcc\x4b"
@@ -79,6 +84,51 @@ const char priv_key[] =
     "\xa8\x2d\xab\x57\x86\x80\x87\x0a\x02\xaf\xfa\xda"
     "\x5e\x7d\xfb\x84\xd1\x3a\xe0\xed\x57";
 const int priv_key_len = 609;
+
+/*const char priv_key[] =
+"\x30\x82\x02\x1F" 
+	"\x02\x01\x01" 
+	"\x02\x82\x01\x00" 
+	"\xDB\x10\x1A\xC2\xA3\xF1\xDC\xFF\x13\x6B\xED\x44\xDF\xF0\x02\x6D"
+	"\x13\xC7\x88\xDA\x70\x6B\x54\xF1\xE8\x27\xDC\xC3\x0F\x99\x6A\xFA"
+	"\xC6\x67\xFF\x1D\x1E\x3C\x1D\xC1\xB5\x5F\x6C\xC0\xB2\x07\x3A\x6D"
+	"\x41\xE4\x25\x99\xAC\xFC\xD2\x0F\x02\xD3\xD1\x54\x06\x1A\x51\x77"
+	"\xBD\xB6\xBF\xEA\xA7\x5C\x06\xA9\x5D\x69\x84\x45\xD7\xF5\x05\xBA"
+	"\x47\xF0\x1B\xD7\x2B\x24\xEC\xCB\x9B\x1B\x10\x8D\x81\xA0\xBE\xB1"
+	"\x8C\x33\xE4\x36\xB8\x43\xEB\x19\x2A\x81\x8D\xDE\x81\x0A\x99\x48"
+	"\xB6\xF6\xBC\xCD\x49\x34\x3A\x8F\x26\x94\xE3\x28\x82\x1A\x7C\x8F"
+	"\x59\x9F\x45\xE8\x5D\x1A\x45\x76\x04\x56\x05\xA1\xD0\x1B\x8C\x77"
+	"\x6D\xAF\x53\xFA\x71\xE2\x67\xE0\x9A\xFE\x03\xA9\x85\xD2\xC9\xAA"
+	"\xBA\x2A\xBC\xF4\xA0\x08\xF5\x13\x98\x13\x5D\xF0\xD9\x33\x34\x2A"
+	"\x61\xC3\x89\x55\xF0\xAE\x1A\x9C\x22\xEE\x19\x05\x8D\x32\xFE\xEC"
+	"\x9C\x84\xBA\xB7\xF9\x6C\x3A\x4F\x07\xFC\x45\xEB\x12\xE5\x7B\xFD"
+	"\x55\xE6\x29\x69\xD1\xC2\xE8\xB9\x78\x59\xF6\x79\x10\xC6\x4E\xEB"
+	"\x6A\x5E\xB9\x9A\xC7\xC4\x5B\x63\xDA\xA3\x3F\x5E\x92\x7A\x81\x5E"
+	"\xD6\xB0\xE2\x62\x8F\x74\x26\xC2\x0C\xD3\x9A\x17\x47\xE6\x8E\xAB"
+	"\x02\x03\x01\x00\x01" 
+	"\x02\x82\x01\x00"
+	"\x52\x41\xF4\xDA\x7B\xB7\x59\x55\xCA\xD4\x2F\x0F\x3A\xCB\xA4\x0D"
+	"\x93\x6C\xCC\x9D\xC1\xB2\xFB\xFD\xAE\x40\x31\xAC\x69\x52\x21\x92"
+	"\xB3\x27\xDF\xEA\xEE\x2C\x82\xBB\xF7\x40\x32\xD5\x14\xC4\x94\x12"
+	"\xEC\xB8\x1F\xCA\x59\xE3\xC1\x78\xF3\x85\xD8\x47\xA5\xD7\x02\x1A"
+	"\x65\x79\x97\x0D\x24\xF4\xF0\x67\x6E\x75\x2D\xBF\x10\x3D\xA8\x7D"
+	"\xEF\x7F\x60\xE4\xE6\x05\x82\x89\x5D\xDF\xC6\xD2\x6C\x07\x91\x33"
+	"\x98\x42\xF0\x02\x00\x25\x38\xC5\x85\x69\x8A\x7D\x2F\x95\x6C\x43"
+	"\x9A\xB8\x81\xE2\xD0\x07\x35\xAA\x05\x41\xC9\x1E\xAF\xE4\x04\x3B"
+	"\x19\xB8\x73\xA2\xAC\x4B\x1E\x66\x48\xD8\x72\x1F\xAC\xF6\xCB\xBC"
+	"\x90\x09\xCA\xEC\x0C\xDC\xF9\x2C\xD7\xEB\xAE\xA3\xA4\x47\xD7\x33"
+	"\x2F\x8A\xCA\xBC\x5E\xF0\x77\xE4\x97\x98\x97\xC7\x10\x91\x7D\x2A"
+	"\xA6\xFF\x46\x83\x97\xDE\xE9\xE2\x17\x03\x06\x14\xE2\xD7\xB1\x1D"
+	"\x77\xAF\x51\x27\x5B\x5E\x69\xB8\x81\xE6\x11\xC5\x43\x23\x81\x04"
+	"\x62\xFF\xE9\x46\xB8\xD8\x44\xDB\xA5\xCC\x31\x54\x34\xCE\x3E\x82"
+	"\xD6\xBF\x7A\x0B\x64\x21\x6D\x88\x7E\x5B\x45\x12\x1E\x63\x8D\x49"
+	"\xA7\x1D\xD9\x1E\x06\xCD\xE8\xBA\x2C\x8C\x69\x32\xEA\xBE\x60\x71"
+	"\x02\x01\x00"
+	"\x02\x01\x00"
+	"\x02\x01\x00"
+	"\x02\x01\x00"
+	"\x02\x01\x00"; 
+const int priv_key_len = 547;*/
 
 const char pub_key[] =
     "\x30\x81\x9e\x30\x0d\x06\x09\x2a\x86\x48\x86\xf7"
@@ -571,6 +621,30 @@ struct akcipher_def {
     struct tcrypt_result result;
 };
 
+struct file *filp;
+
+struct file *file_open(const char *path, int flags, int rights) 
+{
+    struct file *filp = NULL;
+    mm_segment_t oldfs;
+    int err = 0;
+
+    oldfs = get_fs();
+    set_fs(get_ds());
+    filp = filp_open(path, flags, rights);
+    set_fs(oldfs);
+    if (IS_ERR(filp)) {
+        err = PTR_ERR(filp);
+        return NULL;
+    }
+    return filp;
+}
+
+void file_close(struct file *file) 
+{
+    filp_close(file, NULL);
+}
+
 void print_hex(const char *s, unsigned int len)
 { 
   int i;
@@ -620,8 +694,7 @@ unsigned int test_akcipher_encdec(struct akcipher_def *ak,
         
         break;
     }
-    pr_info("akcipher encrypt returned with %d result %d\n",
-            rc, ak->result.err);
+//    pr_info("akcipher encrypt returned with %d result %d\n", rc, ak->result.err);
     init_completion(&ak->result.completion);
 
     return rc;
@@ -644,7 +717,8 @@ static int test_akcipher(void)
     char *output_buffer = NULL;
     char *buf=NULL;
     int ret = -EFAULT;
-
+	int i;
+	unsigned int extra=0;
     akcipher = crypto_alloc_akcipher("rsa", 0, 0);
     if (IS_ERR(akcipher)) {
         pr_info("could not allocate akcipher handle\n");
@@ -682,13 +756,13 @@ static int test_akcipher(void)
  
     
     /* Input data will be random */
-    input_buffer = kmalloc(16, GFP_KERNEL);
+    input_buffer = kmalloc(64, GFP_KERNEL);
     if (!input_buffer) {
         pr_info("could not allocate input_buffer\n");
         goto out;
     }
     //get_random_bytes(input_buffer, 1024);
-    memcpy(input_buffer, "AAAAAAAAAAAAAAAA",16);
+    memcpy(input_buffer, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",64);
 
     out_len_max = crypto_akcipher_maxsize(akcipher);
 
@@ -749,10 +823,14 @@ static int test_akcipher(void)
         (cycles_low):: "%rax", "%rbx", "%rcx", "%rdx");
 
         /* encrypt data */
-        //ret = test_akcipher_encdec(&ak, 1);
-	msleep(2000);
+	for (i=0;i<1000;i++)
+        ret = test_akcipher_encdec(&ak, 1);
+	//msleep(2000);
 	
-	//while(initial==(value=x86_rdmsr(MSR_PP0_ENERGY_STATUS)));
+	middle=x86_rdmsr(MSR_PP0_ENERGY_STATUS);	
+	while(middle==(value=x86_rdmsr(MSR_PP0_ENERGY_STATUS))){
+		extra++;	
+	}
         asm volatile(   "RDTSCP\n\t"
                         "mov %%edx, %0\n\t"
                         "mov %%eax, %1\n\t"
@@ -763,7 +841,7 @@ static int test_akcipher(void)
 	printk(KERN_INFO "rdmsr changes: %llu, time=%llu",(value-initial),end-start);
 	raw_local_irq_restore(flags);
 	preempt_enable();
-
+	 printk(KERN_ERR "time=%llu, extra rdmsr performed=%d\n",end-start,extra);
 	
     if (ret)
         goto out;
@@ -774,7 +852,6 @@ out:
 	/*buf=sg_virt(&ak.output_list);
 	pr_info("Ciphertext:");
 	print_hex(buf,out_len_max);*/
-
 
     if (akcipher)
         crypto_free_akcipher(akcipher);
@@ -792,10 +869,12 @@ out:
 
 void inline measure(int inst,unsigned int count) {
 	unsigned long flags;
-	uint64_t start,end,initial,middle, value=0;
+	uint64_t start,end,initial,middle, value=0,time_span;
 	cycles_low=cycles_high=cycles_low1=cycles_high1=0;
 	volatile int i = 0;
 	unsigned int extra=0;
+	char output_content[100]={};
+	//output_content = kmalloc(64, GFP_KERNEL);
 
 	asm volatile ("CPUID\n\t"
 	"RDTSC\n\t"
@@ -843,7 +922,7 @@ void inline measure(int inst,unsigned int count) {
 		else 
 			x86_100_add(1,1);
 //			x86_100_mul(1,1);
-			//x86_100_ror(0xaaaaaaaa,1);
+			//x86_100_ror(0xaaaaaaaa,1);do_div
 
 	}
 /*--------------------------------------------------------------------------------------*/
@@ -857,6 +936,9 @@ void inline measure(int inst,unsigned int count) {
                         "CPUID\n\t": "=r" (cycles_high1), "=r"
         (cycles_low1):: "%rax", "%rbx", "%rcx", "%rdx");
 	printk(KERN_ERR "rdmsr changes: %llu, value: %llu, initial: %llu",(value-initial),value,initial);
+	
+	
+
         raw_local_irq_restore(flags);
         preempt_enable();
 
@@ -864,19 +946,29 @@ void inline measure(int inst,unsigned int count) {
 start = ( ((uint64_t)cycles_high << 32) | cycles_low );
 
 end = ( ((uint64_t)cycles_high1 << 32) | cycles_low1 );
- printk(KERN_ERR "time=%llu, extra rdmsr performed=%d\n",end-start,extra);
+	time_span=end-start;
+ printk(KERN_ERR "time=%llu, extra rdmsr performed=%d\n",time_span,extra);
+	do_div(time_span, (unsigned int)(value-initial));
+	sprintf(output_content, "%llu %llu %llu\n",(value-initial),(end-start),time_span);
+	printk(KERN_ERR "output_content strlen=%u\n",strlen(output_content));
+	kernel_write(filp, output_content, (unsigned int)strlen(output_content), &filp->f_pos);
 }
 
 static int __init hello_start(void)
 {
   	int i=0;
-  	//for (i=0;i<round;i++)
+	
+	filp=filp_open("/home/ipas/measure/filp", O_WRONLY|O_CREAT, 0644);
+  	for (i=0;i<round;i++)
   	//Filltimes(i);
-	printk(KERN_ERR "add input 1\n");
-  	measure(1,10000000);
-	printk(KERN_ERR "add input 2\n");
- 	measure(0,10000000);
+	//printk(KERN_ERR "add input 1\n");
+  	measure(1,1000000);
+	//printk(KERN_ERR "add input 2\n");
+ 	//measure(0,1000000);
+	
+
   	//test_akcipher();
+	file_close(filp);
   	return;
 }
 
