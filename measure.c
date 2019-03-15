@@ -12,13 +12,18 @@
 #include <linux/mm.h>
 #include <linux/string.h>
 #include <crypto/akcipher.h>
+#include <crypto/skcipher.h>
 #include <linux/scatterlist.h>
 #include <linux/delay.h>
 #include <linux/fs.h>
 #include <asm/segment.h>
 #include <asm/uaccess.h>
 #include <linux/buffer_head.h>
-#define round 500
+#define IA32_PERF_STATUS 0x198
+//#define ENERGY_MSR MSR_PKG_ENERGY_STATUS
+#define ENERGY_MSR MSR_PP0_ENERGY_STATUS
+#define round 100000//how many data points to collect
+#define repeat_count 20000//in one round, how many times the instruction/code being repeated
 //#define round 41000
 
 MODULE_INFO(version, "0.1");
@@ -621,6 +626,14 @@ struct akcipher_def {
     struct tcrypt_result result;
 };
 
+struct skcipher_def {
+    struct scatterlist sg;
+    struct crypto_skcipher *tfm;
+    struct skcipher_request *req;
+    struct tcrypt_result result;
+};
+
+
 struct file *filp;
 
 struct file *file_open(const char *path, int flags, int rights) 
@@ -668,6 +681,20 @@ void test_akcipher_cb(struct crypto_async_request *req, int error)
     encryption_done=1;
 }
 
+void test_skcipher_cb(struct crypto_async_request *req, int error)
+{
+    struct tcrypt_result *result = req->data;
+
+    if (error == -EINPROGRESS){
+       pr_info("Encryption error: inprogress\n");
+        return;
+    }
+    result->err = error;
+    complete(&result->completion);
+    pr_info("Encryption finished successfully\n");
+    encryption_done=1;
+}
+
 /* Perform cipher operation */
 unsigned int test_akcipher_encdec(struct akcipher_def *ak,
                      int enc)
@@ -699,6 +726,7 @@ unsigned int test_akcipher_encdec(struct akcipher_def *ak,
 
     return rc;
 }
+
 
 /* Initialize and trigger cipher operation */
 static int test_akcipher(void)
@@ -813,8 +841,8 @@ static int test_akcipher(void)
  	preempt_disable();
   	raw_local_irq_save(flags);
 	
-	initial=x86_rdmsr(MSR_PP0_ENERGY_STATUS);
-	while(initial==(value=x86_rdmsr(MSR_PP0_ENERGY_STATUS)));
+	initial=x86_rdmsr(ENERGY_MSR);
+	while(initial==(value=x86_rdmsr(ENERGY_MSR)));
 	initial=value;
 	asm volatile (  "CPUID\n\t"
                         "RDTSC\n\t"
@@ -827,8 +855,8 @@ static int test_akcipher(void)
         ret = test_akcipher_encdec(&ak, 1);
 	//msleep(2000);
 	
-	middle=x86_rdmsr(MSR_PP0_ENERGY_STATUS);	
-	while(middle==(value=x86_rdmsr(MSR_PP0_ENERGY_STATUS))){
+	middle=x86_rdmsr(ENERGY_MSR);	
+	while(middle==(value=x86_rdmsr(ENERGY_MSR))){
 		extra++;	
 	}
         asm volatile(   "RDTSCP\n\t"
@@ -866,10 +894,137 @@ out:
     return ret;
 }
 
+#pragma GCC push_options
+#pragma GCC optimize ("O0")
+/* Initialize and trigger cipher operation */
+static uint64_t test_cipher(char* buf)
+{
+    uint64_t start,end,initial,middle, value=0,time_span, freq_init,freq_final;
+    unsigned int extra=0;
+    char output_content[100]={};
+    int i;
+    cycles_low=0;
+    cycles_high=0;
+    cycles_low1=0;
+    cycles_high1=0;
+    struct crypto_cipher *cipher = NULL;
+    //char buf[16]="AAAAAAAAAAAAAAAA";
+    //char buf[16]="DDDDDDDDDDDDDDDD";
+    char key[16]="BBBBBBBBBBBBBBBB";
+    //char key[16]="CCCCCCCCCCCCCCCC";
+    //char key[16]="\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff";
+    char buf_cipher[16]="XXXXXXXXXXXXXXXX";
 
-void inline measure(int inst,unsigned int count) {
+    int ret = -EFAULT;
+
+    cipher = crypto_alloc_cipher("aes-asm", 0, 0);
+    if (IS_ERR(cipher)) {
+        pr_info("could not allocate cipher handle\n");
+        goto out;
+    }
+
+    /* AES 128 with random key */
+   // get_random_bytes(&key, 16);
+    if (crypto_cipher_setkey(cipher, key, 16)) {
+        pr_info("key could not be set\n");
+        ret = -EAGAIN;
+        goto out;
+    }
+
+	//pr_info("Plaintext size:%u",(unsigned int)strlen(buf));
+	//print_hex(buf,(unsigned int)strlen(buf));
+    /* We encrypt one block */
+
+	asm volatile ("CPUID\n\t"
+	"RDTSC\n\t"
+	"mov %%edx, %0\n\t"
+	"mov %%eax, %1\n\t": "=r" (cycles_high), "=r" (cycles_low)::
+	"%rax", "%rbx", "%rcx", "%rdx");
+	asm volatile("RDTSCP\n\t"
+	"mov %%edx, %0\n\t"
+	"mov %%eax, %1\n\t"
+	"CPUID\n\t": "=r" (cycles_high1), "=r" (cycles_low1):: "%rax",
+	"%rbx", "%rcx", "%rdx");
+	asm volatile ("CPUID\n\t"
+	"RDTSC\n\t"
+	"mov %%edx, %0\n\t"
+	"mov %%eax, %1\n\t": "=r" (cycles_high), "=r" (cycles_low)::
+	"%rax", "%rbx", "%rcx", "%rdx");
+	asm volatile("RDTSCP\n\t"
+	"mov %%edx, %0\n\t"
+	"mov %%eax, %1\n\t"
+	"CPUID\n\t": "=r" (cycles_high1), "=r" (cycles_low1):: "%rax",
+	"%rbx", "%rcx", "%rdx");
+
+
+
+ 	preempt_disable();
+  	raw_local_irq_save(flags);
+	
+	initial=x86_rdmsr(ENERGY_MSR);
+	while(initial==(value=x86_rdmsr(ENERGY_MSR)));
+	initial=value;
+
+	freq_init=(x86_rdmsr(IA32_PERF_STATUS)>>8)&0x7F;
+
+	asm volatile (  "CPUID\n\t"
+                        "RDTSC\n\t"
+                        "mov %%edx, %0\n\t"
+                        "mov %%eax, %1\n\t": "=r" (cycles_high), "=r"
+        (cycles_low):: "%rax", "%rbx", "%rcx", "%rdx");
+
+        /* encrypt data */
+
+	for (i=0;i<repeat_count;i++)
+        	crypto_cipher_encrypt_one(cipher,buf_cipher,buf);
+	
+
+	middle=x86_rdmsr(ENERGY_MSR);	
+	while(middle==(value=x86_rdmsr(ENERGY_MSR))){
+		extra++;	
+	}
+        asm volatile(   "RDTSCP\n\t"
+                        "mov %%edx, %0\n\t"
+                        "mov %%eax, %1\n\t"
+                        "CPUID\n\t": "=r" (cycles_high1), "=r"
+        (cycles_low1):: "%rax", "%rbx", "%rcx", "%rdx");
+
+	freq_final=(x86_rdmsr(IA32_PERF_STATUS)>>8)&0x7F;
+
+	start = ( ((uint64_t)cycles_high << 32) | cycles_low );
+        end = ( ((uint64_t)cycles_high1 << 32) | cycles_low1 );
+
+
+	printk(KERN_ERR "rdmsr changes: %llu, value: %llu, initial: %llu",(value-initial),value,initial);
+	raw_local_irq_restore(flags);
+	preempt_enable();
+
+	time_span=end-start;
+ 	printk(KERN_ERR "time=%llu, extra rdmsr performed=%d\n",time_span,extra);
+
+out:
+    if (cipher)
+        crypto_free_cipher(cipher);
+   /* if (buf)measure-aes.c
+        kfree(buf);*/
+    // while(!encryption_done);
+	//pr_info("Ciphertext:");
+	//print_hex(buf_cipher);
+	if (freq_init==freq_final){
+		do_div(time_span, (unsigned int)(value-initial));
+		sprintf(output_content, "%llu %llu %llu %llu\n",(value-initial),(end-start),time_span,freq_init);
+		kernel_write(filp, output_content, (unsigned int)strlen(output_content), &filp->f_pos);
+		return 0;
+	}
+	else return 1;
+}
+
+
+
+unsigned int inline measure(unsigned int op1, unsigned int op2, unsigned int count) {
 	unsigned long flags;
 	uint64_t start,end,initial,middle, value=0,time_span;
+	uint64_t volt_init, volt_final,freq_init,freq_final;
 	cycles_low=cycles_high=cycles_low1=cycles_high1=0;
 	volatile int i = 0;
 	unsigned int extra=0;
@@ -902,10 +1057,14 @@ void inline measure(int inst,unsigned int count) {
         preempt_disable();
         raw_local_irq_save(flags);
 	
-	initial=x86_rdmsr(MSR_PP0_ENERGY_STATUS);
-	while(initial==(value=x86_rdmsr(MSR_PP0_ENERGY_STATUS)));
+	initial=x86_rdmsr(ENERGY_MSR);
+	while(initial==(value=x86_rdmsr(ENERGY_MSR)));
 	initial=value;
 
+	//volt_init=(x86_rdmsr(IA32_PERF_STATUS)>>32)&0xFF;
+
+	/*voltage before*/
+	freq_init=(x86_rdmsr(IA32_PERF_STATUS)>>8)&0x7F;
 	asm volatile (  "CPUID\n\t"
                         "RDTSC\n\t"
                         "mov %%edx, %0\n\t"
@@ -915,54 +1074,70 @@ void inline measure(int inst,unsigned int count) {
 	  for (i=0;i<count;i++){
 	    //x86_rdmsr(MSR_PP0_ENERGY_STATUS);
 	    //x86_100_nop();
-		if (!inst)
-			//x86_100_mul(1,2);
+		//x86_100_mul(op1,op2);
 			//x86_100_ror(0x12345678,678);
-			x86_100_add(999,999);
-		else 
-			x86_100_add(1,1);
+			x86_100_add(op1,op2);
+
 //			x86_100_mul(1,1);
-			//x86_100_ror(0xaaaaaaaa,1);do_div
+			//x86_100_ror(0xaaaaaaaa,1);
+		
 
 	}
 /*--------------------------------------------------------------------------------------*/
-	middle=x86_rdmsr(MSR_PP0_ENERGY_STATUS);	
-	while(middle==(value=x86_rdmsr(MSR_PP0_ENERGY_STATUS))){
+	middle=x86_rdmsr(ENERGY_MSR);	
+	while(middle==(value=x86_rdmsr(ENERGY_MSR))){
 		extra++;	
 	}
+	//volt_final=(x86_rdmsr(IA32_PERF_STATUS)>>32)&0xFF;
+	
         asm volatile(   "RDTSCP\n\t"
                         "mov %%edx, %0\n\t"
                         "mov %%eax, %1\n\t"
                         "CPUID\n\t": "=r" (cycles_high1), "=r"
         (cycles_low1):: "%rax", "%rbx", "%rcx", "%rdx");
+	/*voltage after*/
+	freq_final=(x86_rdmsr(IA32_PERF_STATUS)>>8)&0x7F;
+
 	printk(KERN_ERR "rdmsr changes: %llu, value: %llu, initial: %llu",(value-initial),value,initial);
 	
 	
-
         raw_local_irq_restore(flags);
         preempt_enable();
 
 
-start = ( ((uint64_t)cycles_high << 32) | cycles_low );
-
-end = ( ((uint64_t)cycles_high1 << 32) | cycles_low1 );
+	start = ( ((uint64_t)cycles_high << 32) | cycles_low );
+	end = ( ((uint64_t)cycles_high1 << 32) | cycles_low1 );
 	time_span=end-start;
- printk(KERN_ERR "time=%llu, extra rdmsr performed=%d\n",time_span,extra);
-	do_div(time_span, (unsigned int)(value-initial));
-	sprintf(output_content, "%llu %llu %llu\n",(value-initial),(end-start),time_span);
-	printk(KERN_ERR "output_content strlen=%u\n",strlen(output_content));
-	kernel_write(filp, output_content, (unsigned int)strlen(output_content), &filp->f_pos);
+
+ 	printk(KERN_ERR "time=%llu, extra rdmsr performed=%d\n",time_span,extra);
+	
+	if (freq_init==freq_final){
+		do_div(time_span, (unsigned int)(value-initial));
+		sprintf(output_content, "%llu %llu %llu %llu\n",(value-initial),(end-start),time_span,freq_init);
+		kernel_write(filp, output_content, (unsigned int)strlen(output_content), &filp->f_pos);
+		return 0;
+	}
+	else
+		return 1;
 }
 
 static int __init hello_start(void)
 {
   	int i=0;
-	
-	filp=filp_open("/home/ipas/measure/filp", O_WRONLY|O_CREAT, 0644);
-  	for (i=0;i<round;i++)
+	unsigned int op1,op2;
+	char buf[16]="AAAAAAAAAAAAAAAA";
+	filp=filp_open("/home/ipas/measure/result/aes_static_20000", O_WRONLY|O_CREAT, 0644);
+
+	//printk(KERN_ERR "rand1=%u rand2=%u\n",op1,op2);
+  	for (i=0;i<round;i++){
   	//Filltimes(i);
-	//printk(KERN_ERR "add input 1\n");
-  	measure(1,1000000);
+	//get_random_bytes(&op1, sizeof(op1));
+	//get_random_bytes(&op2, sizeof(op2));
+	//get_random_bytes(buf, sizeof(buf));
+  	//i-=measure(999,999,repeat_count);
+	i-=test_cipher(buf);
+		printk(KERN_ERR "round=%u\n",i);
+	}
 	//printk(KERN_ERR "add input 2\n");
  	//measure(0,1000000);
 	
